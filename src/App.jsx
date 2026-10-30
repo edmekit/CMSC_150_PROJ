@@ -6,33 +6,38 @@ import Typography from "@mui/material/Typography";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import { useState } from "react";
+import Table from "./Table.jsx";
+import { Box, width } from "@mui/system";
+import { Tab, Tabs } from "@mui/material";
+import { TabContext, TabList, TabPanel } from "@mui/lab";
+
 
 const columns = [
-  { field: "plantGroup", headerName: "Plant Group", width: 150 },
-  { field: "cost", headerName: "cgt (₱/MWh)", width: 150 },
-  { field: "cap", headerName: "Capg (MW)", width: 150 },
-  { field: "emission", headerName: "eg (t CO2/MWh)", width: 150 },
+  { field: "plantGroup", headerName: "Plant Group", width: 362},
+  { field: "cost", headerName: "cgt (₱/MWh)", width: 362},
+  { field: "cap", headerName: "Capg (MW)", width: 362},
+  { field: "emission", headerName: "eg (t CO2/MWh)", width: 362},
 ];
 
 const initialRows = [
   {
     id: 1,
     plantGroup: "Coal",
-    cost: "3800 - 3990",
+    cost: "3800 - 3990 (differs by block time)",
     cap: "7000",
     emission: "0.95",
   },
   {
     id: 2,
     plantGroup: "Natural Gas",
-    cost: "6500 - 6825",
+    cost: "6500 - 6825 (differs by block time)",
     cap: "3300",
     emission: "0.40",
   },
   {
     id: 3,
     plantGroup: "Geothermal",
-    cost: "1500 - 1575",
+    cost: "1500 - 1575 (differs by block time)",
     cap: "800",
     emission: "0.10",
   },
@@ -40,7 +45,7 @@ const initialRows = [
   {
     id: 5,
     plantGroup: "Oil-based",
-    cost: "14000 - 14700",
+    cost: "14000 - 14700 (differs by block time)",
     cap: "1500",
     emission: "0.75",
   },
@@ -54,6 +59,8 @@ const matrixValues = [
 ]
 
 function Simplex(tableau) {
+    const tableauHistory = [];
+
     tableau = tableau.map(row => [...row]); // copy the tableau
 
     const rows = tableau.length;            
@@ -91,8 +98,7 @@ function Simplex(tableau) {
                     value - normalizedRow[col] * multiplier
             );
         }
-
-        console.log(tableau);
+        tableauHistory.push([...tableau]);
     }
 
     const Min = tableau[rows - 1][cols - 1];
@@ -108,6 +114,7 @@ function Simplex(tableau) {
     };
 
     return {
+        history: tableauHistory,
         finalTableau: tableau,
         basicSolution: solutions,
         Z: Min
@@ -121,7 +128,6 @@ function hasNegative(row) {
             return true;
         }
     }
-
     return false;
 }
 
@@ -220,6 +226,7 @@ const tableau = [
 
 
 export default function App() {
+  const [value, setValue] = useState(1);
   const sampleMin = Simplex(tableau);
   const [co2, setCo2] = useState(false);
   const [rows, setRows] = useState(initialRows);
@@ -247,8 +254,8 @@ export default function App() {
   }
 
   return (
-    <Stack spacing={3} direction="row">
-      <Paper sx={{ height: 450, width: 700 }}>
+    <Stack spacing={20} direction="column">
+      <Paper sx={{ height: 450, width: "100%" }}>
         <div className="header">
           <Typography variant="h6" sx={{fontWeight: "bold" }}>Luzon Grid Dispatch</Typography>
           <div>
@@ -292,6 +299,7 @@ export default function App() {
           rows={rows}
           columns={columns}
           checkboxSelection
+          hideFooter
           sx={{
             mb: 2,
             mt: 1,
@@ -312,22 +320,27 @@ export default function App() {
           onRowSelectionModelChange={setSelectedRows}
         />
       </Paper>
-      <Paper sx={{ height: 400, width: 300 }}>
-      <table>
-        <tbody>
-          {
-            sampleMin.finalTableau.map((row, i) => (
-              <tr id={i}>
-                {row.map((value, j) => (
-                  <td id={j}>{value}</td>
-                ))}                
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
-      
-      </Paper>
+      <Box sx={{ height: 400, width: "100%" }}>
+        <TabContext value={value}>
+            <TabList  
+              variant="scrollable"
+              scrollButtons="auto"
+              onChange={(e, v) => setValue(v)}
+              aria-label="lab tabs"
+              sx={{ borderBottom: 1, borderColor: 'divider' }}
+            >
+              <Tab label="Item One" value="1" />
+              <Tab label="Item Two" value="2" />
+            </TabList>
+            <TabPanel value="1" tabIndex={1}>
+              <Table tableau={sampleMin.history[0]} keepMounted></Table>
+            </TabPanel>
+            <TabPanel value="2" tabIndex={2}>
+              <Table tableau={sampleMin.history[1]} keepMounted></Table>
+            </TabPanel>
+          </TabContext>
+        
+      </Box>
     </Stack>
   );
 }
