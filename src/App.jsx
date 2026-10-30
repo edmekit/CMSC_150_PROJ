@@ -7,8 +7,8 @@ import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import { useState } from "react";
 import Table from "./Table.jsx";
-import { Box, width } from "@mui/system";
-import { Tab, Tabs } from "@mui/material";
+import { Box } from "@mui/system";
+import { Tab } from "@mui/material";
 import { TabContext, TabList, TabPanel } from "@mui/lab";
 
 
@@ -98,10 +98,7 @@ function Simplex(tableau) {
                     value - normalizedRow[col] * multiplier
             );
         }
-        tableauHistory.push([...tableau]);
-    }
-
-    const Min = tableau[rows - 1][cols - 1];
+            const Min = tableau[rows - 1][cols - 1];
 
     let basic = tableau[rows - 1].slice(0, cols - 2);
     basic.push(Min);
@@ -113,11 +110,13 @@ function Simplex(tableau) {
         values: basic
     };
 
+        tableauHistory.push([[...tableau], solutions]);
+    }
+
+
     return {
         history: tableauHistory,
         finalTableau: tableau,
-        basicSolution: solutions,
-        Z: Min
     };
 }
 
@@ -333,10 +332,10 @@ export default function App() {
               <Tab label="Item Two" value="2" />
             </TabList>
             <TabPanel value="1" tabIndex={1}>
-              <Table tableau={sampleMin.history[0]} keepMounted></Table>
+              <Table tableau={sampleMin.history[0][0]} basicSol={sampleMin.history[0][1]} keepMounted></Table>
             </TabPanel>
             <TabPanel value="2" tabIndex={2}>
-              <Table tableau={sampleMin.history[1]} keepMounted></Table>
+              <Table tableau={sampleMin.history[1][0]} basicSol={sampleMin.history[1][1]}  keepMounted></Table>
             </TabPanel>
           </TabContext>
         

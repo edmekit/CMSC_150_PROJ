@@ -8,12 +8,22 @@ table, th, td {
   border: 1px solid black; 
 }
 
-  table {
-  border-collapse: collapse;
-  width: 100%; /* Optional: Makes the table full-width */
+table {
+border-collapse: collapse;
+width: 100%; 
+min-width: 600px;
 }
 
   th, td {
   padding: 10px;
   text-align: left;
+}
+
+hr {
+  margin: 30px 0px;
+}
+
+
+.table {
+  overflow-x: auto;
 }

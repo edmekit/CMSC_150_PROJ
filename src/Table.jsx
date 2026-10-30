@@ -1,6 +1,7 @@
 
-function Table({ tableau }) {
+function Table({ tableau, basicSol }) {
     return (
+    <div class="table">
     <table>
         <tbody>
           {
@@ -14,6 +15,27 @@ function Table({ tableau }) {
           }
         </tbody>
       </table>
+      <hr></hr>
+      <table>
+        <tbody>
+        <tr>
+          {
+          basicSol.columnNames.map((col, i) => (
+            <th key={i}>{col}</th>
+          ))
+          }
+        </tr>
+        
+        <tr>
+          {
+            basicSol.values.map((value, i) => (
+                <td key={i}>{value}</td>           
+            ))
+          }
+        </tr>
+        </tbody>
+      </table>
+      </div> 
     );
 }
 
