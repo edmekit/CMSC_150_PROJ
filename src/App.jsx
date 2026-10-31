@@ -10,6 +10,7 @@ import Table from "./Table.jsx";
 import { Box } from "@mui/system";
 import { Tab } from "@mui/material";
 import { TabContext, TabList, TabPanel } from "@mui/lab";
+import { Simplex } from "./TableauFunc.jsx"
 
 
 const columns = [
@@ -19,200 +20,40 @@ const columns = [
   { field: "emission", headerName: "eg (t CO2/MWh)", width: 362},
 ];
 
-const initialRows = [
+const rows = [
   {
-    id: 1,
+    id: 'coal',
     plantGroup: "Coal",
     cost: "3800 - 3990 (differs by block time)",
     cap: "7000",
     emission: "0.95",
   },
   {
-    id: 2,
+    id: 'gas',
     plantGroup: "Natural Gas",
     cost: "6500 - 6825 (differs by block time)",
     cap: "3300",
     emission: "0.40",
   },
   {
-    id: 3,
+    id: 'geo',
     plantGroup: "Geothermal",
     cost: "1500 - 1575 (differs by block time)",
     cap: "800",
     emission: "0.10",
   },
-  { id: 4, plantGroup: "Hydro", cost: "300", cap: "2500", emission: "0" },
   {
-    id: 5,
+    id: 'oil',
     plantGroup: "Oil-based",
     cost: "14000 - 14700 (differs by block time)",
     cap: "1500",
     emission: "0.75",
   },
-  { id: 6, plantGroup: "Solar", cost: "40", cap: "2500", emission: "0" },
-  { id: 7, plantGroup: "Wind", cost: "60", cap: "400", emission: "0" },
+  { id: 'hydro', plantGroup: "Hydro", cost: "300", cap: "2500", emission: "0" },
+  { id: 'solar', plantGroup: "Solar", cost: "40", cap: "2500", emission: "0" },
+  { id: 'wind', plantGroup: "Wind", cost: "60", cap: "400", emission: "0" },
 ];
 
-const matrixValues = [
-  { id : 1, values: [ 1, 2, 8, 4, 5, 6, 7 ]},
-  { id : 2, values: [ 1, 2, 3, 4, 5, 6, 7 ]},
-]
-
-function Simplex(tableau) {
-    const tableauHistory = [];
-
-    tableau = tableau.map(row => [...row]); // copy the tableau
-
-    const rows = tableau.length;            
-    const cols = tableau[0].length;
-
-    while (hasNegative(tableau[rows - 1].slice(0, cols - 1))) { // last row without sol col
-        const colIndex = findPivotColId(tableau[rows - 1].slice(0, cols - 1));
-        const pivotCol = tableau.map(row => row[colIndex]);     // get values in pivot col
-        
-        const answers = tableau.map(row => row[cols - 1]);       // get values in sol col
-
-        const rowIndex = findPivotElemId(pivotCol, answers);    
-
-        if (rowIndex === -1) {
-            throw new Error("Unbounded solution.");
-        }
-
-        const pivotRow = tableau[rowIndex].slice();
-        const pivotElem = tableau[rowIndex][colIndex];
-
-        for (let row = 0; row < rows; row++) {
-            const normalizedRow = pivotRow.map(
-                value => value / pivotElem
-            );
-
-            if (row === rowIndex) {
-                tableau[rowIndex] = normalizedRow;
-                continue;
-            }
-
-            const multiplier = tableau[row][colIndex];
-
-            tableau[row] = tableau[row].map(
-                (value, col) =>
-                    value - normalizedRow[col] * multiplier
-            );
-        }
-            const Min = tableau[rows - 1][cols - 1];
-
-    let basic = tableau[rows - 1].slice(0, cols - 2);
-    basic.push(Min);
-
-    const solutionNames = ["S1", "S2", "X1", "X2", "Z"];
-
-    const solutions = {
-        columnNames: solutionNames,
-        values: basic
-    };
-
-        tableauHistory.push([[...tableau], solutions]);
-    }
-
-
-    return {
-        history: tableauHistory,
-        finalTableau: tableau,
-    };
-}
-
-
-function hasNegative(row) {
-    for (let i = 0; i < row.length; i++) {
-        if (row[i] < 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-
-function findPivotColId(row) {
-    let highestIndex = 0;
-    let highestValue = row[0];
-
-    for (let i = 0; i < row.length; i++) {
-        if (row[i] >= 0) {
-            continue;
-        }
-
-        if (row[i] < highestValue) {
-            highestValue = row[i];
-            highestIndex = i;
-        }
-    }
-    return highestIndex;
-}
-
-function findPivotElemId(col, answers) {
-    let smallestRatio = Infinity;
-    let smallestIndex = -1;
-
-    for (let i = 0; i < col.length; i++) {
-        if (col[i] <= 0) {
-            continue;
-        }
-        const ratio = answers[i] / col[i];
-        if (ratio < smallestRatio) {
-            smallestRatio = ratio;
-            smallestIndex = i;
-        }
-    }
-
-    return smallestIndex;
-}
-
-
-function getBasicSolution(tableau, columnNames) {
-    const cols = tableau[0].length;
-    const solutions = [];
-
-    for (let col = 0; col < cols - 1; col++) {
-        if (isCleared(tableau.map(row => row[col]))) {
-            const answer = findAnswer(
-                tableau.map(row => row[col]),
-                tableau.map(row => row[cols - 1])
-            );
-
-            solutions.push(answer);
-        } else {
-            solutions.push(0);
-        }
-    }
-
-    return {
-        columnNames: columnNames.slice(0, cols - 1),
-        values: solutions
-    };
-}
-
-
-function isCleared(col) {
-    const values = [];
-
-    for (let row = 0; row < col.length; row++) {
-        if (Math.abs(col[row]) > 0) {
-            values.push(col[row]);
-        }
-    }
-
-    return values.length <= 1;
-}
-
-
-function findAnswer(col, answers) {
-    for (let row = 0; row < col.length; row++) {
-        if (col[row] === 1) {
-            return answers[row];
-        }
-    }
-
-    return 0;
-}
 
 // TEST TABLEAU
 const tableau = [
@@ -222,13 +63,12 @@ const tableau = [
 ];
 
 
-
-
 export default function App() {
   const [value, setValue] = useState(1);
   const sampleMin = Simplex(tableau);
-  const [co2, setCo2] = useState(false);
-  const [rows, setRows] = useState(initialRows);
+  const [c02, setC02] = useState(false);
+  const [c02cap, setC02cap] = useState(165000);
+  
 
   const [selectedRows, setSelectedRows] = useState({
     type: "include",
@@ -260,18 +100,21 @@ export default function App() {
           <div>
             <Switch
               color="warning"
-              checked={co2}
+              checked={c02}
               onChange={(e) => {
                 setCo2(e.target.checked);
               }}
             />
             <TextField
-              defaultValue="165000"
+              defaultValue={c02cap}
               label="Limit Daily C02"
               variant="standard"
               color="warning"
               focused
-              disabled={!co2}
+              disabled={!c02}
+              onChange={(e) => {
+                setC02cap(e.target.value);
+              }}
             />
             <Stack spacing={1} direction="row">
               <Button

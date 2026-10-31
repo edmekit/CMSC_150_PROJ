@@ -1,11 +1,11 @@
 .header{
-  display: flex;
-  justify-content: space-between;
-  flex-direction: row;
+display: flex;
+justify-content: space-between;
+flex-direction: row;
 }
 
 table, th, td {
-  border: 1px solid black; 
+border: 1px solid black; 
 }
 
 table {
@@ -14,16 +14,17 @@ width: 100%;
 min-width: 600px;
 }
 
-  th, td {
-  padding: 10px;
-  text-align: left;
+th, td {
+padding: 10px;
+text-align: left;
+font-family: 'Helvetica';
 }
 
 hr {
-  margin: 30px 0px;
+margin: 30px 0px;
 }
 
 
 .table {
-  overflow-x: auto;
+overflow-x: auto;
 }
