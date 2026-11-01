@@ -2,35 +2,23 @@ const groups = ['coal', 'gas', 'geo', 'oil', 'hydro', 'solar', 'wind']
 const timeblocks = 6
 const demands = [6300, 8600, 11800, 12300, 14000, 10600]
 const caps = [7000, 3300, 800, 1500, 2500] 
-const solarCap = [0, 250, 1500, 1375, 200, 0, 0]
+const solarCap = [0, 250, 1500, 1375, 200, 0]
 const windCap = [140, 120, 100, 100, 120, 140]
+const emissions = [3.8, 1.6, 0.4, 3]
+const multipliers = [1, 1.01, 1.03, 1.05, 1.04, 1.02];
+const base = [15200, 26000, 6000, 56000]
 
-function diffPrice(base){
-    const prices = [];
-    const multipliers = [1, 1.01, 1.03, 1.05, 1.04, 1.02];
-
-    multipliers.map((mult) => {
-        prices.push(base * mult);
-    })
-
-    return prices
+function diffPrice(base, mult){
+    return Math.round(base * mult)
 }
 
 function makeVar(group, time){
     return `X${group}${time}`
 }
 
-const coalPrice = diffPrice(15200)
-const gasPrice = diffPrice(26000)
-const geoPrice = diffPrice(6000)
-const oilPrice = diffPrice(56000)
-const hydroPrice = [1200, 1200, 1200, 1200, 1200, 1200]
-const solarPrice = [160, 160, 160, 160, 160, 160]
-const windPrice = [240, 240, 240, 240, 240, 240]
-
 export function buildPrimalProb(selected, c02, c02cap){
     const vars = [];
-    const cons = []; // has coeff, sign, RHS
+    const cons = []; // has coeff and RHS
 
     for (let i = 0; i < timeblocks; i++){
         for (let j = 0; j < groups.length; j++){
@@ -44,48 +32,144 @@ export function buildPrimalProb(selected, c02, c02cap){
     for (let i = 0; i < timeblocks; i++){
         const coeffs = [];
         for (let j = 0; j < groups.length; j++){
+            if (!selected.includes(groups[j])){
+                continue;
+            }
             coeffs.push({
                 key : makeVar(groups[j], i + 1),
                 value : 1
             })
         }
-        cons.push([coeffs, '>=', demands[i]])
+        cons.push([coeffs, -1 * demands[i]])
     }
 
     // cap constraint
     for (let i = 0; i < groups.length; i++){
-        if (groups[i] === 'solar'){
+        if (!selected.includes(groups[i])){
+                continue;
+            }
+        else if (groups[i] === 'solar'){
             for (let j = 0; j < timeblocks; j++){
                 cons.push([[{
                     key: makeVar(groups[i], j + 1),
-                    value : 1}], '<=' , solarCap[j]])
+                    value : -1}], solarCap[j]])
             }
         } else if (groups[i] === 'wind'){
             for (let j = 0; j < timeblocks; j++){
                 cons.push([[{
                     key: makeVar(groups[i], j + 1),
-                    value : 1}], '<=' , windCap[j]])
+                    value : -1}], windCap[j]])
             }
         } else {
         for (let j = 0; j < timeblocks; j++){
             cons.push([[{
                     key: makeVar(groups[i], j + 1),
-                    value : 1}], '<=' , caps[j]])
+                    value : -1}], caps[i]])
         }
         }
     }
 
     // coal minimum
     for (let i = 0; i < timeblocks; i++){
+        if (!selected.includes('coal')) break;
         cons.push([[{
                     key: makeVar('coal', i + 1),
-                    value : 1}], '>=', caps[1] * 0.4])
+                    value : 1}], caps[0] * 0.4 * -1])
     }
 
-    
 
+    // coal ramping
+    for (let i = 0; i < timeblocks - 1; i++){
+        if (!selected.includes('coal')) break;
+        // up
+        cons.push([[{
+            key: makeVar('coal', i + 1),
+            value : 1}, {
+            key: makeVar('coal', i + 2),
+            value : -1
+            }], 1500])
+        
+        // down
+        cons.push([[{
+            key: makeVar('coal', i + 1),
+            value : -1}, {
+            key: makeVar('coal', i + 2),
+            value : 1
+            }], 1500])
+    }
 
+    if (selected.includes('hydro')){
+        const coeffs = [];
+        for (let i = 0; i < timeblocks; i++){
+            coeffs.push({
+                key : makeVar('hydro', i + 1),
+                value : -1
+            })
+        }
+        cons.push([coeffs, 2000])
+    }
+
+    // cap is on 
+    if (c02){
+        const coeffs = []
+        for (let i = 0; i < groups.length; i++){
+            if (!selected.includes(groups[i])){
+                continue;
+            }
+            else if (groups[i] === 'solar' || groups[i] === 'wind' || groups[i] === 'hydro'){
+                continue;
+            }
+            for (let j = 0; j < timeblocks; j++){
+                coeffs.push({
+                    key : makeVar(groups[i], j + 1),
+                    value : -1 * emissions[i]
+                })
+            }
+        }
+        cons.push([coeffs, c02cap])
+    }
+
+    // objective function
+    const coeffs = [];
+    for (let i = 0; i < groups.length; i++){
+        
+        if (!selected.includes(groups[i])){
+                continue;
+        } else if (groups[i] === 'hydro'){
+            for (let j = 0; j < timeblocks; j++){
+            coeffs.push({
+                key : makeVar(groups[i], j + 1),
+                value : 1200
+                })
+            } 
+        }   else if (groups[i] === 'solar'){
+            for (let j = 0; j < timeblocks; j++){
+            coeffs.push({
+                key : makeVar(groups[i], j + 1),
+                value : 160
+                })
+            }
+        } else if (groups[i] === 'wind'){
+            for (let j = 0; j < timeblocks; j++){
+            coeffs.push({
+                key : makeVar(groups[i], j + 1),
+                value : 240
+                })
+            }
+        } else {
+            for (let j = 0; j < timeblocks; j++){
+            coeffs.push({
+                key : makeVar(groups[i], j + 1),
+                value : diffPrice(base[i], multipliers[j])
+                })
+            }        
+        }
+    }
+    cons.push([coeffs, 1])
+
+    return [vars, cons]
 }
+
 
 export function Simplex(tableau) {
     const tableauHistory = [];
