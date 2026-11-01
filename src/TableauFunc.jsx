@@ -1,5 +1,9 @@
 const groups = ['coal', 'gas', 'geo', 'oil', 'hydro', 'solar', 'wind']
 const timeblocks = 6
+const demands = [6300, 8600, 11800, 12300, 14000, 10600]
+const caps = [7000, 3300, 800, 1500, 2500] 
+const solarCap = [0, 250, 1500, 1375, 200, 0, 0]
+const windCap = [140, 120, 100, 100, 120, 140]
 
 function diffPrice(base){
     const prices = [];
@@ -24,20 +28,62 @@ const hydroPrice = [1200, 1200, 1200, 1200, 1200, 1200]
 const solarPrice = [160, 160, 160, 160, 160, 160]
 const windPrice = [240, 240, 240, 240, 240, 240]
 
-function buildPrimalProb(selected, c02, c02cap){
+export function buildPrimalProb(selected, c02, c02cap){
     const vars = [];
+    const cons = []; // has coeff, sign, RHS
 
     for (let i = 0; i < timeblocks; i++){
         for (let j = 0; j < groups.length; j++){
             if (selected.includes(groups[j])){
-                vars.push({
-                    key : makeVar(groups[j], i + 1)
-                })
+                vars.push(makeVar(groups[j], i + 1))
             }
         }
     }
+    
+    // demand constraint
+    for (let i = 0; i < timeblocks; i++){
+        const coeffs = [];
+        for (let j = 0; j < groups.length; j++){
+            coeffs.push({
+                key : makeVar(groups[j], i + 1),
+                value : 1
+            })
+        }
+        cons.push([coeffs, '>=', demands[i]])
+    }
 
-    const constraints = []
+    // cap constraint
+    for (let i = 0; i < groups.length; i++){
+        if (groups[i] === 'solar'){
+            for (let j = 0; j < timeblocks; j++){
+                cons.push([[{
+                    key: makeVar(groups[i], j + 1),
+                    value : 1}], '<=' , solarCap[j]])
+            }
+        } else if (groups[i] === 'wind'){
+            for (let j = 0; j < timeblocks; j++){
+                cons.push([[{
+                    key: makeVar(groups[i], j + 1),
+                    value : 1}], '<=' , windCap[j]])
+            }
+        } else {
+        for (let j = 0; j < timeblocks; j++){
+            cons.push([[{
+                    key: makeVar(groups[i], j + 1),
+                    value : 1}], '<=' , caps[j]])
+        }
+        }
+    }
+
+    // coal minimum
+    for (let i = 0; i < timeblocks; i++){
+        cons.push([[{
+                    key: makeVar('coal', i + 1),
+                    value : 1}], '>=', caps[1] * 0.4])
+    }
+
+    
+
 
 }
 

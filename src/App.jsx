@@ -10,7 +10,7 @@ import Table from "./Table.jsx";
 import { Box } from "@mui/system";
 import { Tab } from "@mui/material";
 import { TabContext, TabList, TabPanel } from "@mui/lab";
-import { Simplex } from "./TableauFunc.jsx"
+import { Simplex, buildPrimalProb } from "./TableauFunc.jsx"
 
 
 const columns = [
@@ -84,13 +84,10 @@ export default function App() {
 
   function solveSelected(){
     let total = 0
-    selectedRows.ids.forEach((id) => {
-
-      total += matrixValues[id - 1].values[2]
-    })
-
+    buildPrimalProb([...selectedRows.ids], true, 16500)
     console.log(total)
   }
+
 
   return (
     <Stack spacing={20} direction="column">
